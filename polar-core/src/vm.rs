@@ -63,8 +63,8 @@ pub enum Goal {
         literal: InstanceLiteral,
     },
     UnifyExternal {
-        left_instance_id: u64,
-        right_instance_id: u64,
+        left: Term,
+        right: Term,
     },
     CheckError,
     Noop,
@@ -299,10 +299,7 @@ impl PolarVirtualMachine {
                 check_errors,
             } => return self.lookup_external(*call_id, instance, field, *check_errors),
             Goal::IsaExternal { instance, literal } => return self.isa_external(instance, literal),
-            Goal::UnifyExternal {
-                left_instance_id,
-                right_instance_id,
-            } => return self.unify_external(*left_instance_id, *right_instance_id),
+            Goal::UnifyExternal { left, right } => return self.unify_external(left, right),
             Goal::MakeExternal {
                 constructor,
                 instance_id,
@@ -1035,11 +1032,7 @@ impl PolarVirtualMachine {
         })
     }
 
-    pub fn unify_external(
-        &mut self,
-        left_instance_id: u64,
-        right_instance_id: u64,
-    ) -> PolarResult<QueryEvent> {
+    pub fn unify_external(&mut self, left: &Term, right: &Term) -> PolarResult<QueryEvent> {
         let result = self.kb.read().unwrap().gensym("unify");
         let call_id = self.new_call_id(&result);
 
@@ -1050,8 +1043,8 @@ impl PolarVirtualMachine {
 
         Ok(QueryEvent::ExternalUnify {
             call_id,
-            left_instance_id,
-            right_instance_id,
+            left: left.clone(),
+            right: right.clone(),
         })
     }
 
@@ -1683,9 +1676,6 @@ impl PolarVirtualMachine {
                 }
             }
 
-            // TODO(gj): Is this case necessary to handle at all? What is an example rule that
-            // would lead to this? When would you need to unify an instance with itself?
-            //
             // External instances can unify if they are the same instance, i.e., have the same
             // instance ID. This is necessary for the case where an instance appears multiple times
             // in the same rule head. For example, `f(foo, foo) if ...` or `isa(x, y, x: y) if ...`
@@ -1701,8 +1691,8 @@ impl PolarVirtualMachine {
                 }),
             ) if left_instance != right_instance => {
                 self.push_goal(Goal::UnifyExternal {
-                    left_instance_id: *left_instance,
-                    right_instance_id: *right_instance,
+                    left: left.clone(),
+                    right: right.clone(),
                 })?;
             }
 
@@ -1718,6 +1708,13 @@ impl PolarVirtualMachine {
                     &left,
                     String::from("Cannot unify instance literal with external instance."),
                 ));
+            }
+
+            (Value::ExternalInstance(_), _) | (_, Value::ExternalInstance(_)) => {
+                self.push_goal(Goal::UnifyExternal {
+                    left: left.clone(),
+                    right: right.clone(),
+                })?;
             }
 
             // Anything else fails.
@@ -2871,8 +2868,16 @@ mod tests {
         loop {
             vm.push_goal(Goal::Noop).unwrap();
             vm.push_goal(Goal::UnifyExternal {
-                left_instance_id: 1,
-                right_instance_id: 1,
+                left: Term::new_from_test(Value::ExternalInstance(ExternalInstance {
+                    instance_id: 1,
+                    constructor: None,
+                    repr: None,
+                })),
+                right: Term::new_from_test(Value::ExternalInstance(ExternalInstance {
+                    instance_id: 1,
+                    constructor: None,
+                    repr: None,
+                })),
             })
             .unwrap();
             let result = vm.run();
