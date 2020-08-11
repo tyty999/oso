@@ -91,7 +91,7 @@ public class Exceptions {
         }
     }
 
-    public static class OsoException extends Exception {
+    public static class OsoException extends RuntimeException {
         private Map<String, Object> details;
 
         public OsoException(String msg, Map<String, Object> details) {
@@ -186,7 +186,8 @@ public class Exceptions {
 
     public static class InvalidCallError extends PolarRuntimeException {
         public InvalidCallError(String className, String callName, Class<?>... argTypes) {
-            super("Invalid call `" + callName + "` on class " + className + ", with argument types " + "`" + argTypes + "`");
+            super("Invalid call `" + callName + "` on class " + className + ", with argument types " + "`" + argTypes
+                    + "`");
         }
 
         public InvalidCallError(String msg) {
