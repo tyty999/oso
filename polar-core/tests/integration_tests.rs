@@ -34,12 +34,17 @@ fn no_is_subspecializer(_: u64, _: Symbol, _: Symbol) -> bool {
     false
 }
 
-fn query_results<F, G, H, I, J>(
+fn no_external_unify(_: u64, _: Term, _: Term) -> bool {
+    false
+}
+
+fn query_results<F, G, H, I, J, K>(
     mut query: Query,
     mut external_call_handler: F,
     mut make_external_handler: H,
     mut external_isa_handler: I,
     mut external_is_subspecializer_handler: J,
+    mut external_unify_handler: K,
     mut debug_handler: G,
 ) -> QueryResults
 where
@@ -48,6 +53,7 @@ where
     H: FnMut(u64, Term),
     I: FnMut(Term, Symbol) -> bool,
     J: FnMut(u64, Symbol, Symbol) -> bool,
+    K: FnMut(u64, Term, Term) -> bool,
 {
     let mut results = vec![];
     loop {
@@ -85,6 +91,11 @@ where
                 instance,
                 class_tag,
             } => query.question_result(call_id, external_isa_handler(instance, class_tag)),
+            QueryEvent::ExternalUnify {
+                call_id,
+                left,
+                right,
+            } => query.question_result(call_id, external_unify_handler(call_id, left, right)),
             QueryEvent::ExternalIsSubSpecializer {
                 call_id,
                 instance_id,
@@ -111,6 +122,7 @@ macro_rules! query_results {
             no_externals,
             no_isa,
             no_is_subspecializer,
+            no_external_unify,
             no_debug,
         )
     };
@@ -121,6 +133,7 @@ macro_rules! query_results {
             $make_external_handler,
             no_isa,
             no_is_subspecializer,
+            no_external_unify,
             $debug_handler,
         )
     };
@@ -131,6 +144,7 @@ macro_rules! query_results {
             no_externals,
             no_isa,
             no_is_subspecializer,
+            no_external_unify,
             no_debug,
         )
     };
@@ -145,6 +159,7 @@ fn query_results_with_externals(query: Query) -> (QueryResults, MockExternal) {
             |a, b| mock.borrow_mut().make_external(a, b),
             |a, b| mock.borrow_mut().external_isa(a, b),
             |a, b, c| mock.borrow_mut().external_is_subspecializer(a, b, c),
+            |_, b, c| mock.borrow_mut().external_unify(b, c),
             no_debug,
         ),
         mock.into_inner(),
