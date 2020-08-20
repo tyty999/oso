@@ -512,11 +512,11 @@ describe('#registerConstant', () => {
 });
 
 describe('unifying promises', () => {
-  test('fails if both promises are the same object', () => {
+  test('succeeds if both promises are the same object', () => {
     const p = new Polar();
     p.registerClass(Async);
     const result = Array.from(p.query('new Async().wait() = x and x = x'));
-    expect(result).toStrictEqual([]);
+    expect(result).toHaveLength(1);
   });
 
   test('fails if the promises are different objects', () => {

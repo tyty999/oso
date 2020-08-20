@@ -34,6 +34,14 @@ namespace B {
 
 oso.registerClass(B.C, 'C');
 
+class E {
+  static sum(args: number[]) {
+    return args.reduce((a, b) => { return a + b }, 0);
+  }
+}
+
+oso.registerClass(E);
+
 // This path has the same nesting for development and the parity test jobs by sheer coincidence.
 // In tests it's `languages/js/test/parity.ts`
 // In parity tests it's `js_package/dist/test/parity.js`
@@ -71,6 +79,8 @@ if (
     oso.queryRule('testMethodCalls', new A('hello'), new B.C('hello')).next()
       .done,
     oso.queryRule('testOr').next().done,
+    oso.queryRule('testUnifyClass', A).next().done,
+    oso.queryRule('testDerefJava').next().done,
     // oso.queryRule('testHttpAndPathMapper').next().done,
   ].some(v => v)
 )
