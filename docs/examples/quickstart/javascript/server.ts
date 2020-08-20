@@ -3,7 +3,7 @@ import { Oso } from 'oso';
 import * as http from 'http';
 
 const oso: Oso = new Oso();
-oso.loadFile("expenses.polar");
+oso.loadFile(__dirname + "/expenses.polar");
 
 const server = http.createServer(async function (req, res) {
     const actor = req.headers["user"]!;
