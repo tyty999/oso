@@ -4,6 +4,7 @@ import * as http from 'http';
 
 const oso: Oso = new Oso();
 oso.loadFile(__dirname + "/expenses.polar");
+oso.registerClass(Expense);
 
 const server = http.createServer(async function (req, res) {
     const actor = req.headers["user"]!;
